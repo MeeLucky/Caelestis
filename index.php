@@ -1,4 +1,8 @@
 <?php 
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
     $mysqli = new mysqli("localhost", "root", "", "Caelestis");
 ?>
 <!DOCTYPE html>
@@ -35,9 +39,9 @@ require_once('phpex/Classes/PHPExcel.php');
 // $mysqli = new mysqli("localhost", "root", "", "Caelestis");
 
 //анализ экселя
-parseXLS($mysqli, 'report.xls');
+$id_report =  parseXLS($mysqli, 'report.xls');
 //анализ оборотов в БД
-// analyseTurnover($mysqli);
+analyseTurnover($mysqli, $id_report);
 //создание таблицы
 // echo makeTable(getItemsByCategory($mysqli, 45));
 
@@ -46,8 +50,10 @@ parseXLS($mysqli, 'report.xls');
 // echo getTableAllItems($mysqli);
 
 //формирует предложение к заказу для всех оборотов
-function analyseTurnover($mysqli) {
-    $result = $mysqli->query("SELECT * FROM item_turnover");
+function analyseTurnover($mysqli, $id_report) {
+    $result = $mysqli->query("SELECT * FROM item_turnover WHERE id_reports = " . $id_report);
+    echo "SELECT * FROM item_turnover WHERE id_reports = " . $id_report;
+    exit;
     foreach($result as $item) {
         $start = $item["start"];
         $arrival = $item["arrival"];
@@ -70,7 +76,7 @@ function analyseTurnover($mysqli) {
         }
 
         if($item["suggest"] != $rec){
-            $mysqli->query("UPDATE item_turnover SET suggest = " . $rec ." WHERE id_items = " . $item["id_items"]);
+            $mysqli->query("UPDATE item_turnover SET suggest = " . $rec ." WHERE id_reports = ".$id_report." AND id_items = " . $item["id_items"]);
             if (mysqli_error($mysqli) != "")
                 echo "<br>". mysqli_error($mysqli);
         }
@@ -191,6 +197,7 @@ function formatToSQL($str) {
 
 
 function parseXLS($mysqli, $inputFileName) {
+
     $xls = PHPExcel_IOFactory::load($inputFileName);
     $xls->setActiveSheetIndex(0);
     $sheet = $xls->getActiveSheet();
@@ -255,7 +262,6 @@ function parseXLS($mysqli, $inputFileName) {
 
     //удаляем обороты по складу
     $mysqli->query("DELETE FROM item_turnover WHERE id_reports IN (SELECT id FROM reports WHERE id_storage = ".$id_storage.")");
-exit;
     //кешируем таблицу категорий
     $categories = cashe_categories($mysqli);
 
@@ -266,7 +272,8 @@ exit;
     //ищем категорию товара в БД, если её там нет, то добавляем в БД
     //ищем товар в БД, если его там нет, то добавляем в БД
     //добавляем обороты для товара
-    $debug = true;
+    $debug = false;
+    
     foreach ($items as $item) {
         //$item:
         //  0 code
@@ -344,7 +351,7 @@ exit;
         echo "INSERT INTO items (name, id_categories, code) VALUES ('".$item[1]."', ". $id_categories .", '".$item[0]."');";
             throw new Exception("Не удалось получить ид товара");
         }
-            if ($debug) echo "<br>Получили ид товара: " . $id_item . " - " . $item[0];
+        if ($debug) echo "<br>Получили ид товара: " . $id_item . " - " . $item[0];
 
         //сверяем корректность тоавра и категории
         //name
@@ -371,10 +378,12 @@ exit;
         // добавляем обороты для товара
         $mysqli->query("INSERT INTO item_turnover   (id_items, id_reports, start, arrival, cost, end) 
             VALUES  (".$id_item.", ". $id_report." ,".$item[3].", ".$item[4].", ".$item[5].", ".$item[6].")");
-        echo "<br><b>" . mysqli_error($mysqli) ."</b>";
+        if ($debug) echo "<br><b>" . mysqli_error($mysqli) ."</b>";
         if ($debug) echo "<br>Добавили обороты товара";
         if ($debug) echo "<hr>";
     }
+
+    return $id_report;
 }
 
 function toDate($date) {
