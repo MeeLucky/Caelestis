@@ -1,229 +1,73 @@
-<?php 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
-
-    $mysqli = new mysqli("localhost", "root", "", "Caelestis");
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caelestis</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script src="js/jQuery.js"></script>
-    <script src="js/script.js"></script>
-</head>
-<body>
-    <div class="input-file">
-        <label for="file-select">Загрузить таблицу Excel</label>
-        <br>
-        <input id="file-select" type="file" accept=".xls">
-        <br>
-        <input type="button" value="Загрузить" onclick="upload();">
-    </div>
-    <div class="settings">
-        <div class="category-selector-wrapper">
-            <label for="category-selector">Выберите категорию</label>
-            <br>
-            <select id="category-selector">
-                <option value="0">Все категории</option>
-                <?php 
-                    $result = $mysqli->query("SELECT id, name FROM general_categories");
-                    foreach($result as $item) 
-                        echo "<option value = ".$item["id"].">".$item["name"]."</option>";
-                ?>  
-            </select>
-
-            <br>
-            <br>
-
-            <label for="storage-selector">Выберите склад</label>
-            <br>
-            <select id="storage-selector">
-                <option value="0"></option>
-                <?php 
-                    $result = $mysqli->query("SELECT id, name FROM storage");
-                    foreach($result as $item) 
-                        echo "<option value = ".$item["id"].">".$item["name"]."</option>";
-                ?>  
-            </select>
-        </div>
-        <br>
-        <input class="btn-show" type="button" value="Показать" onclick="getTurnover()">
-    </div>
-
-    <div class="result"></div>
-
-</body>
-</html>
-
 <?php
-// Подключаем класс для работы с excel
-// require_once('phpex/Classes/PHPExcel.php');
-// Подключаем класс для вывода данных в формате excel
-// require_once('phpex/Classes/PHPExcel/Writer/Excel5.php');
+// Название <input type="file">
+$input_name = 'file';
+ 
+// Разрешенные расширения файлов.
+$allow = array();
+ 
+// Запрещенные расширения файлов.
+$deny = array(
+	'phtml', 'php', 'php3', 'php4', 'php5', 'php6', 'php7', 'phps', 'cgi', 'pl', 'asp', 
+	'aspx', 'shtml', 'shtm', 'htaccess', 'htpasswd', 'ini', 'log', 'sh', 'js', 'html', 
+	'htm', 'css', 'sql', 'spl', 'scgi', 'fcgi', 'exe'
+);
+ 
+// Директория куда будут загружаться файлы.
+$path = "../uploads/";
+ 
+ 
+$error = $success = '';
+if (!isset($_FILES[$input_name])) {
+	$error = 'Файл не загружен.';
+} else {
+	$file = $_FILES[$input_name];
+ 
+	// Проверим на ошибки загрузки.
+	if (!empty($file['error']) || empty($file['tmp_name'])) {
+		$error = 'Не удалось загрузить файл.';
+	} elseif ($file['tmp_name'] == 'none' || !is_uploaded_file($file['tmp_name'])) {
+		$error = 'Не удалось загрузить файл.';
+	} else {
+		// Оставляем в имени файла только буквы, цифры и некоторые символы.
+		$pattern = "[^a-zа-яё0-9,~!@#%^-_\$\?\(\)\{\}\[\]\.]";
+		$name = mb_eregi_replace($pattern, '-', $file['name']);
+		$name = mb_ereg_replace('[-]+', '-', $name);
+		$parts = pathinfo($name);
+ 
+		if (empty($name) || empty($parts['extension'])) {
+			$error = 'Недопустимый тип файла';
+		} elseif (!empty($allow) && !in_array(strtolower($parts['extension']), $allow)) {
+			$error = 'Недопустимый тип файла';
+		} elseif (!empty($deny) && in_array(strtolower($parts['extension']), $deny)) {
+			$error = 'Недопустимый тип файла';
+		} else {
+			// Перемещаем файл в директорию.
+			if (move_uploaded_file($file['tmp_name'], $path . $name)) {
+				// Далее можно сохранить название файла в БД и т.п.
+				$success = 'Файл «' . $name . '» успешно загружен.';
+			} else {
+				$error = 'Не удалось загрузить файл.';
+			}
+		}
+	}
+}
+ 
+$data = array(
+	'error'   => $error,
+	'success' => $success,
+);
+ 
+header('Content-Type: application/json');
+echo json_encode($data, JSON_UNESCAPED_UNICODE);
+exit();
 
-//подключаемся к бд
+
+// require_once('phpex/Classes/PHPExcel.php');
 // $mysqli = new mysqli("localhost", "root", "", "Caelestis");
 
-//анализ экселя
-// $id_report =  parseXLS($mysqli, 'report.xls');
-//анализ оборотов в БД
-// analyseTurnover($mysqli, $id_report);
-//создание таблицы
-// echo makeTable(getItemsByCategory($mysqli, 45));
 
+// parseXLS($mysqli, 'report.xls');
 
-//получение всей таблицы БД
-// echo getTableAllItems($mysqli);
-
-//формирует предложение к заказу для всех оборотов
-function analyseTurnover($mysqli, $id_report) {
-    $result = $mysqli->query("SELECT * FROM item_turnover WHERE id_reports = " . $id_report);
-    echo "SELECT * FROM item_turnover WHERE id_reports = " . $id_report;
-    // exit;
-    foreach($result as $item) {
-        $start = $item["start"];
-        $arrival = $item["arrival"];
-        $cost = $item["cost"];
-        $end = $item["end"];
-        $rec = 0;
-        //1) если остаток 0, то расходы * 1.5
-        //2) если расход >= остатка, то (расход - остатк) * 1.2
-        //3) остаток > расохода 
-        //примеры:
-        //1) остаток 0, расход 21, 21 * 1.5 = 31.5, 32 к заказу
-        //2) остаток 5, расход 7, (7 - 5) * 1.2 = 2.4, 3 к заказу
-
-        if ($end != 0){
-            if ($cost >= $end) {
-                $rec = ceil(($cost - $end) * 1.2);
-            }
-        } else {
-            $rec = ceil($cost * 1.5);
-        }
-
-        if($item["suggest"] != $rec){
-            $mysqli->query("UPDATE item_turnover SET suggest = " . $rec ." WHERE id_reports = ".$id_report." AND id_items = " . $item["id_items"]);
-            if (mysqli_error($mysqli) != "")
-                echo "<br>". mysqli_error($mysqli);
-        }
-
-    }
-}
-
-function getItemsByCategory($mysqli, $id_category) {
-    $result = $mysqli->query("SELECT items.name as name, start, arrival, cost, end, id_general_categories, suggest
-    FROM items 
-    LEFT JOIN item_turnover ON items.id = item_turnover.id_items
-    LEFT JOIN categories ON items.id_categories = categories.id 
-    WHERE id_general_categories = ". $id_category . "
-    ORDER BY suggest DESC");
-    if (mysqli_error($mysqli) != "")
-        echo mysqli_error($mysqli);
-    return $result;
-} 
-
-function makeTable($result) {
-    $str = "<table border=1 cellpadding='3' cellspacing='0'>";
-    $str .= "<tr>";
-    $str .= "<th>Название</th>";
-    $str .= "<th>Начало<br>периода</th>";
-    $str .= "<th>Приход</th>";
-    $str .= "<th>Расход</th>";
-    $str .= "<th>Конец<br>периода</th>";
-    $str .= "<th>Рекомендация</th>";
-    $str .= "</tr>";
-    foreach($result as $item) {
-        $str .= "<tr>";
-        $str .= "<td>".$item["name"]."</td>";
-        $str .= "<td>".$item["start"]."</td>";
-        $str .= "<td>".$item["arrival"]."</td>";
-        $str .= "<td>".$item["cost"]."</td>";
-        $str .= "<td>".$item["end"]."</td>";
-        $str .= "<td>".$item["suggest"]."</td>";
-        $str .= "</tr>";
-    }
-    $str .= "</table>";
-
-    return $str;
-}
-
-
-function getTableAllItems($mysqli) {
-    $result = $mysqli->query("SELECT items.id as id, items.name as name, start, arrival, cost, end, general_name
-    FROM items 
-    LEFT JOIN item_turnover ON items.id = item_turnover.id_items
-    LEFT JOIN categories ON items.id_categories = categories.id;");
-    $str .= "";
-    echo mysqli_error($mysqli);
-    $str = "<table border=1 cellpadding='3' cellspacing='0'>";
-    $str .= "<tr>";
-    $str .= "<th>id</th>";
-    $str .= "<th>name</th>";
-    $str .= "<th>start</th>";
-    $str .= "<th>arrival</th>";
-    $str .= "<th>cost</th>";
-    $str .= "<th>end</th>";
-    $str .= "<th>category</th>";
-    $str .= "</tr>";
-    foreach($result as $item) {
-        $str .= "<tr>";
-        $str .= "<td align='center'>". $item["id"] ."</td>";
-        $str .= "<td>".  $item["name"] . "</td>";
-        $str .= "<td align='center'>".  $item["start"] . "</td>";
-        $str .= "<td align='center'>".  $item["arrival"] . "</td>";
-        $str .= "<td align='center'>".  $item["cost"] . "</td>";
-        $str .= "<td align='center'>".  $item["end"] . "</td>";
-        $str .= "<td align='center'>".  $item["general_name"] . "</td>";
-        $str .= "</tr>";
-    }
-    $str .= "</table>";
-    return $str;
-}
-
-
-function cashe_categories($mysqli) {
-    $result = $mysqli->query("SELECT MAX(id) as maxid FROM categories;");
-    $row = $result->fetch_assoc();
-    $maxid = $row["maxid"];
-   
-    $result = $mysqli->query("SELECT id, name FROM categories;");
-    $row = $result->fetch_assoc();
-    $ret = array_fill(0, $maxid, null);
-    if ($row == null)
-        return [];
-    else {
-        foreach($result as $item) {
-            $ret[$item["id"]] = $item["name"];
-        }
-    }
-    return $ret;
-}
-
-
-//code
-//0 name
-//1 id
-//2 id_categories
-function cashe_items($mysqli) {
-    $result = $mysqli->query("SELECT code, id, name, id_categories FROM items;");
-    $row = $result->fetch_assoc();
-    $ret = [];
-    foreach($result as $item) {
-        $ret[$item["code"]] = [$item["name"], $item["id"], $item["id_categories"]];
-    }
-    return $ret; 
-}
-
-
-function formatToSQL($str) {
-    $str = str_replace("'", "", $str);
-    $str = str_replace("\\", "", $str);
-    return $str;
-}
 
 
 function parseXLS($mysqli, $inputFileName) {

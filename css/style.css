@@ -1,0 +1,28 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.input-file {
+    text-align: center;
+}
+
+.input-file #file-select {
+    margin: 5px 0;
+    border: 2px gray solid;
+    border-radius: 5px;
+    padding: 50px 100px;
+}
+
+.settings {
+    text-align: center;
+}
+
+.category-selector-wrapper {
+    text-align: left;
+    margin: 20px auto 0px;
+    width: max-content;
+}
+
+.btn-show {
+    
+}
