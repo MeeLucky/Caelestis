@@ -171,8 +171,9 @@ function parseXLS($mysqli, $inputFileName) {
             $strerror .= $item[0];
             $strerror .= "<br><b>". $db_items[$item[0]][0] . " != " . $item[1] . "</b><br>";
             //var_dump($db_items[$item[0]]);
-
-            throw new Exception("Некореектное название товара");
+            echo $db_items[$item[0]][0] ." != ". $item[1] ."\n";
+            $mysqli->query("UPDATE items SET name = '".$item[1]."' WHERE id = " . $id_item);
+            // throw new Exception("Некореектное название товара");
         }
 
         //id_categories

@@ -34,10 +34,13 @@ function analyseTurnover($mysqli, $id_report) {
         if ($end != 0){
             if ($cost >= $end) {
                 $rec = ceil(($cost - $end) * 1.2);
+                if ($rec == 0) $rec = ceil($cost * 0.2);  
             }
         } else {
             $rec = ceil($cost * 1.5);
         }
+
+        if ($rec > 2) $rec = ceil($rec / 2);
 
         if($item["suggest"] != $rec){
             $mysqli->query("UPDATE item_turnover SET suggest = " . $rec ." WHERE id = " . $item["id"]);
@@ -45,7 +48,6 @@ function analyseTurnover($mysqli, $id_report) {
             if (mysqli_error($mysqli) != "")
                 echo "<br>". mysqli_error($mysqli);
         }
-
     }
 }
 
@@ -65,7 +67,7 @@ function getItemsByCategory($mysqli, $id_category, $sort) {
         LEFT JOIN categories ON items.id_categories = categories.id 
         WHERE id_general_categories = ". $id_category . $where . "
         ORDER BY ".$sort." DESC;";// suggest DESC, cost DESC, name;";
-        echo $query;
+        // echo $query;
     $result = $mysqli->query($query);
 
 if (mysqli_error($mysqli) != "")
