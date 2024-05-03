@@ -1,8 +1,9 @@
 <?php
 $fileName = $_POST["fileName"];
 
-require_once('phpex/Classes/PHPExcel.php');
-$mysqli = new mysqli("localhost", "root", "", "Caelestis");
+require_once('phpex/Classes/PHPExcel.php');    
+require_once("dbconnect.php");
+
 
 echo parseXLS($mysqli, "../uploads/".$fileName);
 

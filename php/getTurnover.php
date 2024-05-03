@@ -3,7 +3,7 @@ $storage = $_GET["storage"];
 $category = $_GET["category"];
 $sort = $_GET["sort"];
 
-$mysqli = new mysqli("localhost", "root", "", "Caelestis");
+require_once("dbconnect.php");
 
 $result = $mysqli->query("SELECT MAX(id) as maxid FROM reports WHERE id_storage = " . $storage);
 $row = $result->fetch_assoc();
