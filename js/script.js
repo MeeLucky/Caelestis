@@ -40,15 +40,25 @@ function upload() {
 			dataType : 'json',
 			success: function(msg){
 				if (msg.error == '') {
-					alert(msg.success);
+					alert("Файл '"+msg.success+"' успешно загружен.");
+                    parseXLS(msg.success);
 				} else {
 					alert(msg.error);
-                    
-					// $('#result').html(msg.error);
 				}
 			}
 		});
 	}
+}
+
+function parseXLS(fileName) {
+    $.ajax({
+        type: "POST",
+        url: "../php/parseXLS.php",
+        data: "fileName="+fileName,
+        success: function(response){
+            console.log(response);     
+        }
+    });
 }
 
 // /*
