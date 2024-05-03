@@ -6,6 +6,10 @@ body {
     text-align: center;
 }
 
+.input-file p {
+    margin: 0;
+}
+
 .input-file #file-select {
     margin: 5px 0;
     border: 2px gray solid;
@@ -24,5 +28,13 @@ body {
 }
 
 .btn-show {
-    
+    margin-bottom: 20px;
+}
+
+.result table {
+    margin: 0 auto;
+}
+
+.uploading {
+    font-weight: bold;
 }

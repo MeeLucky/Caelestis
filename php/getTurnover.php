@@ -59,7 +59,8 @@ function getItemsByCategory($mysqli, $id_category, $sort) {
         $where = " AND (items.name LIKE ('%картридж%') OR items.name LIKE ('%испаритель%'))";
     } elseif ($id_category == 37) {
         $where = " AND NOT (items.name LIKE ('%картридж%') OR items.name LIKE ('%испаритель%'))";
-    }
+    } 
+
 
     $query = "SELECT items.name as name, cost, end, id_general_categories, suggest
         FROM items 

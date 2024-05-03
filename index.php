@@ -19,17 +19,17 @@ error_reporting(E_ALL);
 <body>
     <div class="input-file">
         <label for="file-select">Загрузить таблицу Excel</label>
-        <br>
+        <p><a href="manual.php" target="_blank">Инструкция по загрузке</a></p>
         <input id="file-select" type="file" accept=".xls">
         <br>
-        <input type="button" value="Загрузить" onclick="upload();">
+        <input class="btn-upload" type="button" value="Загрузить" onclick="upload();">
     </div>
     <div class="settings">
         <div class="category-selector-wrapper">
             <label for="category-selector">Категория </label>
             <br>
             <select id="category-selector">
-                <option value="0">Все категории</option>
+                <option value="0"></option>
                 <option value="-1">Картриджи и испарители</option>
                 <?php 
                     $result = $mysqli->query("SELECT id, name FROM general_categories WHERE on_suggest = 1");
@@ -60,7 +60,6 @@ error_reporting(E_ALL);
                 <option value="name">Названию</option>
                 <option value="cost">Расходу</option>
                 <option value="end">Остатку</option>
-                
             </select>
         </div>
         <br>
