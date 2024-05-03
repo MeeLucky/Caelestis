@@ -1,11 +1,17 @@
 function getTurnover() {
     let category = $("#category-selector").val();
     let storage = $("#storage-selector").val();
+    let sort = $("#sort-selector").val();
+
+    if(storage == 0) {
+        alert("Выберите склад");
+        return;
+    }
     
     $.ajax({
         url: '../php/getTurnover.php',         /* Куда пойдет запрос */
         method: 'get',             /* Метод передачи (post или get) */
-        data: "storage="+storage+"&category="+category,
+        data: "storage="+storage+"&category="+category+"&sort="+sort,
         success: function(response){   /* функция которая будет выполнена после успешного запроса.  */
             // console.log(response);            /* В переменной data содержится ответ от index.php. */
             $(".result").html(response);

@@ -25,12 +25,13 @@ error_reporting(E_ALL);
     </div>
     <div class="settings">
         <div class="category-selector-wrapper">
-            <label for="category-selector">Выберите категорию</label>
+            <label for="category-selector">Категория </label>
             <br>
             <select id="category-selector">
                 <option value="0">Все категории</option>
+                <option value="-1">Картриджи и испарители</option>
                 <?php 
-                    $result = $mysqli->query("SELECT id, name FROM general_categories");
+                    $result = $mysqli->query("SELECT id, name FROM general_categories WHERE on_suggest = 1");
                     foreach($result as $item) 
                         echo "<option value = ".$item["id"].">".$item["name"]."</option>";
                 ?>  
@@ -39,8 +40,7 @@ error_reporting(E_ALL);
             <br>
             <br>
 
-            <label for="storage-selector">Выберите склад</label>
-            <br>
+            <label for="storage-selector">Cклад </label>
             <select id="storage-selector">
                 <option value="0"></option>
                 <?php 
@@ -48,6 +48,18 @@ error_reporting(E_ALL);
                     foreach($result as $item) 
                         echo "<option value = ".$item["id"].">".$item["name"]."</option>";
                 ?>  
+            </select>
+
+            <br>
+            <br>
+
+            <label for="sort-selector">Сортирвоать по </label>
+            <select id="sort-selector">
+                <option value="suggest">Рекомендациям</option>
+                <option value="name">Названию</option>
+                <option value="cost">Расходу</option>
+                <option value="end">Остатку</option>
+                
             </select>
         </div>
         <br>

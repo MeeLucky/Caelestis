@@ -1,6 +1,7 @@
 <?php
 $storage = $_GET["storage"];
 $category = $_GET["category"];
+$sort = $_GET["sort"];
 
 $mysqli = new mysqli("localhost", "root", "", "Caelestis");
 
@@ -11,7 +12,7 @@ $id_report = $row["maxid"];
 //генерация рекомендаций
 analyseTurnover($mysqli, $id_report);
 //создание таблицы
-echo makeTable(getItemsByCategory($mysqli, $category));
+echo makeTable(getItemsByCategory($mysqli, $category, $sort));
 
 
 //формирует предложение к заказу для всех оборотов
@@ -48,14 +49,26 @@ function analyseTurnover($mysqli, $id_report) {
     }
 }
 
-function getItemsByCategory($mysqli, $id_category) {
-    $result = $mysqli->query("SELECT items.name as name, cost, end, id_general_categories, suggest
-    FROM items 
-    LEFT JOIN item_turnover ON items.id = item_turnover.id_items
-    LEFT JOIN categories ON items.id_categories = categories.id 
-    WHERE id_general_categories = ". $id_category . "
-    ORDER BY suggest DESC, cost DESC;");
-    if (mysqli_error($mysqli) != "")
+function getItemsByCategory($mysqli, $id_category, $sort) {
+    $where = "";
+    //pod-системы
+    if ($id_category == "-1") {
+        $id_category = 37;
+        $where = " AND (items.name LIKE ('%картридж%') OR items.name LIKE ('%испаритель%'))";
+    } elseif ($id_category == 37) {
+        $where = " AND NOT (items.name LIKE ('%картридж%') OR items.name LIKE ('%испаритель%'))";
+    }
+
+    $query = "SELECT items.name as name, cost, end, id_general_categories, suggest
+        FROM items 
+        LEFT JOIN item_turnover ON items.id = item_turnover.id_items
+        LEFT JOIN categories ON items.id_categories = categories.id 
+        WHERE id_general_categories = ". $id_category . $where . "
+        ORDER BY ".$sort." DESC;";// suggest DESC, cost DESC, name;";
+        echo $query;
+    $result = $mysqli->query($query);
+
+if (mysqli_error($mysqli) != "")
         echo mysqli_error($mysqli);
     return $result;
 } 
@@ -67,7 +80,7 @@ function makeTable($result) {
     // $str .= "<th>Начало<br>периода</th>";
     // $str .= "<th>Приход</th>";
     $str .= "<th>Расход</th>";
-    $str .= "<th>Конец<br>периода</th>";
+    $str .= "<th>Остаток</th>";
     $str .= "<th>Рекомендация</th>";
     $str .= "</tr>";
     foreach($result as $item) {
